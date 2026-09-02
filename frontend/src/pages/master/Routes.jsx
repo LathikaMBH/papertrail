@@ -1,0 +1,104 @@
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import api from '../../services/api';
+
+const StatusBadge = ({ status }) => (
+  <span className={`badge badge-${status}`}>
+    {status === 'not_started' ? 'Not started' : status === 'ongoing' ? 'Ongoing' : 'Completed'}
+  </span>
+);
+
+export default function MasterRoutes() {
+  const navigate = useNavigate();
+  const [routes, setRoutes] = useState([]);
+  const [filter, setFilter] = useState('all');
+  const [loading, setLoading] = useState(true);
+
+  const load = () => api.getRoutes().then(setRoutes).finally(() => setLoading(false));
+  useEffect(() => { load(); }, []);
+
+  const deleteRoute = async (id, e) => {
+    e.stopPropagation();
+    if (!confirm('Delete this route and all its stops?')) return;
+    await api.deleteRoute(id);
+    load();
+  };
+
+  const filtered = filter === 'all' ? routes : routes.filter(r => r.status === filter);
+  const filters = [
+    { k:'all', l:'All' }, { k:'not_started', l:'Not started' },
+    { k:'ongoing', l:'Ongoing' }, { k:'completed', l:'Completed' }
+  ];
+
+  return (
+    <div className="screen">
+      <div className="page-header">
+        <button className="back-btn" onClick={() => navigate('/master')}><i className="ti ti-arrow-left" /></button>
+        <h3>Routes</h3>
+        <button className="btn btn-sm" style={{ background:'var(--pr)', color:'#fff', padding:'8px 12px' }}
+          onClick={() => navigate('/master/routes/new')}>
+          <i className="ti ti-plus" />
+        </button>
+      </div>
+
+      {/* Search */}
+      <div style={{ padding:'0 22px 12px' }}>
+        <div style={{ background:'var(--el)', borderRadius:14, padding:'11px 14px', display:'flex', alignItems:'center', gap:10, border:'1px solid var(--border)' }}>
+          <i className="ti ti-search" style={{ color:'var(--mut)', fontSize:18 }} />
+          <span style={{ color:'var(--mut)', fontSize:14 }}>Search routes...</span>
+        </div>
+      </div>
+
+      {/* Filter tabs */}
+      <div style={{ display:'flex', gap:8, padding:'0 22px 16px', overflowX:'auto' }}>
+        {filters.map(f => (
+          <button key={f.k} onClick={() => setFilter(f.k)}
+            style={{ padding:'8px 14px', borderRadius:20, border:'none', cursor:'pointer', whiteSpace:'nowrap',
+              background: filter===f.k ? 'var(--pr)' : 'var(--el)',
+              color: filter===f.k ? '#fff' : 'var(--mut)',
+              fontSize:12, fontWeight:500, fontFamily:'inherit' }}>
+            {f.l}
+          </button>
+        ))}
+      </div>
+
+      {/* Route cards */}
+      <div style={{ padding:'0 22px' }}>
+        {loading && <div className="spinner" />}
+        {filtered.map(r => (
+          <div key={r.id} className="card" style={{ marginBottom:14, cursor:'pointer' }} onClick={() => navigate(`/master/routes/${r.id}`)}>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:12 }}>
+              <div>
+                <div style={{ fontWeight:600, fontSize:15, color:'var(--tx)' }}>{r.name}</div>
+                <div style={{ color:'var(--mut)', fontSize:12, marginTop:3 }}>
+                  {r.rider_name ? <><i className="ti ti-user" style={{ fontSize:11 }} /> {r.rider_name}</> : <span style={{ color:'var(--amb)' }}><i className="ti ti-alert-triangle" style={{ fontSize:11 }} /> Unassigned</span>}
+                </div>
+              </div>
+              <StatusBadge status={r.status} />
+            </div>
+            <div style={{ display:'flex', gap:16, marginBottom:14 }}>
+              <span style={{ color:'var(--sub)', fontSize:13 }}><i className="ti ti-mailbox" style={{ fontSize:12 }} /> {r.stop_count} stops</span>
+              {r.delivered_count > 0 && <span style={{ color:'var(--grn)', fontSize:13 }}><i className="ti ti-check" style={{ fontSize:12 }} /> {r.delivered_count} done</span>}
+            </div>
+            <div style={{ display:'flex', gap:8 }}>
+              <button className="btn btn-ghost btn-sm" style={{ flex:1 }} onClick={e => { e.stopPropagation(); navigate(`/master/routes/${r.id}/edit`); }}>
+                <i className="ti ti-edit" style={{ fontSize:13 }} /> Edit
+              </button>
+              <button className="btn btn-ghost btn-sm" style={{ flex:1, color:'var(--pl)' }} onClick={e => { e.stopPropagation(); navigate(`/master/routes/${r.id}`); }}>
+                <i className="ti ti-eye" style={{ fontSize:13 }} /> View
+              </button>
+              <button className="btn btn-danger btn-sm" onClick={e => deleteRoute(r.id, e)}>
+                <i className="ti ti-trash" style={{ fontSize:13 }} />
+              </button>
+            </div>
+          </div>
+        ))}
+        {!loading && filtered.length === 0 && (
+          <div style={{ textAlign:'center', color:'var(--mut)', paddingTop:40 }}>
+            No routes found
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
