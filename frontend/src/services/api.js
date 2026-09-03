@@ -1,5 +1,6 @@
 import axios from 'axios';
-const api = axios.create({ baseURL: '/api' });
+const BACKEND = import.meta.env.VITE_API_URL || '';
+const api = axios.create({ baseURL: `${BACKEND}/api` });
 api.interceptors.request.use(cfg => {
   const t = localStorage.getItem('pt_token');
   if (t) cfg.headers.Authorization = `Bearer ${t}`;
