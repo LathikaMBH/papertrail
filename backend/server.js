@@ -8,11 +8,11 @@ const app = express();
 const server = http.createServer(app);
 
 const io = new Server(server, {
-  cors: { origin: ['https://papertrail-rauma.netlify.app', 'http://localhost:3000'], credentials: true }
+  cors: { origin: '*', methods: ['GET','POST','PUT','DELETE'] }
 });
 
 // ── Middleware ────────────────────────────────────────────────────────────────
-app.use(cors({ origin: ['https://papertrail-rauma.netlify.app', 'http://localhost:3000'], credentials: true }));
+app.use(cors());
 app.use(express.json());
 
 // Attach io to every request so route handlers can emit events
